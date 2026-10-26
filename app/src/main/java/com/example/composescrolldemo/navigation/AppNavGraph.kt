@@ -13,10 +13,9 @@ import com.example.composescrolldemo.presentation.hotellist.HotelListScreen
 /**
  * Root [NavHost] wiring together all destinations.
  *
- * Important: each `composable { }` lambda defines a unique back-stack entry.
- * When the user navigates to [HotelDetail] the [HotelList] entry stays on the
- * back-stack but its Composable is destroyed.  This is exactly the scenario
- * that triggers the scroll-reset bug, and that the ViewModel fix solves.
+ * Each composable destination defines a unique back-stack entry. When navigating
+ * to [HotelDetail], the [HotelList] entry stays on the back-stack while its
+ * Composable is destroyed — which triggers the scroll-reset behavior.
  */
 @Composable
 fun AppNavGraph(
@@ -29,7 +28,6 @@ fun AppNavGraph(
         modifier = modifier,
     ) {
 
-        // ── Hotel List ────────────────────────────────────────────────────────
         composable(route = NavRoutes.HotelList.route) {
             HotelListScreen(
                 onNavigateToDetail = { hotelId ->
@@ -38,7 +36,6 @@ fun AppNavGraph(
             )
         }
 
-        // ── Hotel Detail ──────────────────────────────────────────────────────
         composable(
             route = NavRoutes.HotelDetail.route,
             arguments = listOf(

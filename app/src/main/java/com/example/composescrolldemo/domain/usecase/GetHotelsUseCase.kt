@@ -8,8 +8,7 @@ import kotlinx.coroutines.flow.Flow
  * Single-responsibility use-case that exposes the hotel list.
  *
  * Use-cases are the boundary between domain and presentation — they
- * contain the business rules (here: simply delegate to the repository,
- * but could add sorting, filtering, etc.).
+ * contain the business rules (here: simply delegate to the repository).
  */
 class GetHotelsUseCase(private val repository: HotelRepository) {
 

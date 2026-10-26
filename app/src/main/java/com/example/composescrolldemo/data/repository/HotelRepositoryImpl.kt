@@ -7,11 +7,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
 /**
- * Concrete implementation of [HotelRepository] that pulls data from the
- * in-memory [HotelMockDataSource].
+ * Concrete implementation of [HotelRepository] using [HotelMockDataSource].
  *
- * The `flow { }` builder makes it trivial to swap this for a suspend
- * network/database call without touching any other layer.
+ * Uses Flow builder to allow seamless migration to remote/local data sources.
  */
 class HotelRepositoryImpl : HotelRepository {
 

@@ -48,15 +48,7 @@ import com.example.composescrolldemo.di.hotelDetailViewModelFactory
 import com.example.composescrolldemo.domain.model.Hotel
 
 /**
- * Hotel detail screen.
- *
- * Receives [hotelId] as a nav argument (passed from the NavGraph) and
- * delegates to [HotelDetailViewModel] to load the data.
- *
- * Pressing Back emits [HotelDetailUiIntent.NavigateBack] → ViewModel sends
- * [HotelDetailUiEffect.PopBackStack] → [onNavigateBack] lambda → NavController
- * pops the stack → HotelListScreen re-enters with the ViewModel's preserved
- * scroll position.
+ * Hotel detail screen displaying details and supporting back navigation.
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -64,14 +56,12 @@ fun HotelDetailScreen(
     hotelId: Int,
     onNavigateBack: () -> Unit,
     viewModel: HotelDetailViewModel = viewModel(
-        // key ensures a separate ViewModel instance per hotelId
         key = "hotel_detail_$hotelId",
         factory = hotelDetailViewModelFactory(hotelId),
     ),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    // One-shot navigation effects
     LaunchedEffect(Unit) {
         viewModel.effects.collect { effect ->
             when (effect) {
@@ -117,7 +107,6 @@ fun HotelDetailScreen(
                 uiState.isLoading -> {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }
-
                 uiState.hotel == null -> {
                     Text(
                         text = "Hotel not found",
@@ -125,20 +114,17 @@ fun HotelDetailScreen(
                         style = MaterialTheme.typography.bodyLarge,
                     )
                 }
-
                 else -> {
-                    HotelDetail(hotel = uiState.hotel!!)
+                    HotelDetailContent(hotel = uiState.hotel!!)
                 }
             }
         }
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun HotelDetail(
+private fun HotelDetailContent(
     hotel: Hotel,
     modifier: Modifier = Modifier,
 ) {
@@ -149,8 +135,7 @@ private fun HotelDetail(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-
-        // ── Hero image placeholder ────────────────────────────────────────────
+        // Hero image header
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -162,7 +147,7 @@ private fun HotelDetail(
             Text(text = "🏨", style = MaterialTheme.typography.displayLarge)
         }
 
-        // ── Name + location ───────────────────────────────────────────────────
+        // Header info
         Text(
             text = hotel.name,
             style = MaterialTheme.typography.headlineSmall,
@@ -176,7 +161,7 @@ private fun HotelDetail(
 
         HorizontalDivider()
 
-        // ── Rating ────────────────────────────────────────────────────────────
+        // Rating & Price
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
                 imageVector = Icons.Filled.Star,
@@ -190,30 +175,23 @@ private fun HotelDetail(
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
             )
-            Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "· ${hotel.reviewCount} reviews",
+                text = " (${hotel.reviewCount} reviews)",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            Spacer(modifier = Modifier.weight(1f))
+            Text(
+                text = "$${hotel.pricePerNight}/night",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+            )
         }
-
-        // ── Price ─────────────────────────────────────────────────────────────
-        Text(
-            text = "$${hotel.pricePerNight}",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.ExtraBold,
-            color = MaterialTheme.colorScheme.primary,
-        )
-        Text(
-            text = "per night",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
 
         HorizontalDivider()
 
-        // ── Amenities ─────────────────────────────────────────────────────────
+        // Amenities
         Text(
             text = "Amenities",
             style = MaterialTheme.typography.titleMedium,
@@ -221,39 +199,29 @@ private fun HotelDetail(
         )
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             hotel.amenities.forEach { amenity ->
-                AssistChip(
-                    onClick = {},
-                    label = { Text(amenity) },
-                )
+                AssistChip(onClick = {}, label = { Text(amenity) })
             }
         }
 
         HorizontalDivider()
 
-        // ── Description placeholder ───────────────────────────────────────────
+        // Description
         Text(
             text = "About",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
         )
         Text(
-            text = "Experience world-class hospitality at ${hotel.name}, located in the heart of ${hotel.location}. " +
-                "Our property blends modern design with exceptional service, offering guests an unparalleled stay " +
-                "with breathtaking views, award-winning dining, and a full-service spa. Whether you're traveling " +
-                "for business or leisure, every detail has been thoughtfully curated to exceed your expectations.",
+            text = "Experience world-class hospitality at ${hotel.name}, located in the heart of ${hotel.location}.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
-        // ── Reserve button ────────────────────────────────────────────────────
         Button(
             onClick = {},
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-            ),
         ) {
             Text(
                 text = "Reserve for $${hotel.pricePerNight}/night",

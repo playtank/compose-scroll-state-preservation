@@ -3,11 +3,10 @@ package com.example.composescrolldemo.data.source
 import com.example.composescrolldemo.domain.model.Hotel
 
 /**
- * In-memory mock data source that mimics an Expedia-style hotel catalogue.
+ * In-memory mock data source mimicking a hotel catalogue.
  *
- * In a real project this would be replaced with a Retrofit service call or
- * a Room DAO — the repository pattern means nothing in the presentation or
- * domain layers needs to change when that happens.
+ * Designed behind [HotelRepository] so swapping this for Retrofit or
+ * Room later requires zero changes to the domain or presentation layers.
  */
 internal object HotelMockDataSource {
 

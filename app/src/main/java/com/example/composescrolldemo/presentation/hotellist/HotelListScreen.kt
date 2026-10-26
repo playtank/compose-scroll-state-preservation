@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -48,48 +49,21 @@ import com.example.composescrolldemo.domain.model.Hotel
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 /**
- * Hotel list screen — demonstrates the LazyColumn scroll-preservation fix.
- *
- * ═══════════════════════════════════════════════════════════════════════════
- * THE BUG (without the fix)
- * ─────────────────────────
- * `rememberLazyListState()` stores state inside the Composable's remembered
- * scope.  Navigation pops the Composable off the tree when going to Detail,
- * then re-creates it from zero on Back.  The remembered LazyListState is
- * gone, so the list jumps back to item 0.
- *
- * THE FIX (implemented below)
- * ────────────────────────────
- * 1. We create `LazyListState` with the initial scroll values taken from the
- *    ViewModel's UiState (`firstVisibleItemIndex`, `firstVisibleItemScrollOffset`).
- *    Because the ViewModel survives navigation, these values are non-zero when
- *    the user returns from the Detail screen.
- *
- * 2. A `LaunchedEffect` observes the live LazyListState via `snapshotFlow` and
- *    fires `OnScrollPositionChanged` every time the user scrolls, keeping the
- *    ViewModel in sync.
- *
- * 3. On Back navigation the screen re-enters step 1: the ViewModel still holds
- *    the last saved position → `LazyListState` is seeded with it → list appears
- *    at exactly the right spot.
- * ═══════════════════════════════════════════════════════════════════════════
+ * Hotel list screen — demonstrates LazyColumn scroll-preservation.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HotelListScreen(
     onNavigateToDetail: (hotelId: Int) -> Unit,
-    // The ViewModel is scoped to the NavBackStackEntry by the Compose
-    // Navigation runtime — it is NOT recreated on recomposition.
     viewModel: HotelListViewModel = viewModel(factory = hotelListViewModelFactory()),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    // ── One-shot effects ──────────────────────────────────────────────────────
     LaunchedEffect(Unit) {
         viewModel.effects.collect { effect ->
             when (effect) {
                 is HotelListUiEffect.NavigateToDetail -> onNavigateToDetail(effect.hotelId)
-                is HotelListUiEffect.ShowMessage -> { /* In a real app: show snackbar */ }
+                is HotelListUiEffect.ShowMessage -> { /* Handle message */ }
             }
         }
     }
@@ -126,14 +100,9 @@ fun HotelListScreen(
                 else -> {
                     HotelList(
                         hotels = uiState.hotels,
-                        // ── FIX step 1: seed LazyListState from ViewModel ──────
-                        // These come from the ViewModel, which persists them across
-                        // navigation.  On first load they are both 0 (default).
-                        // On re-entry after Back they hold the last saved position.
-                        initialFirstVisibleItemIndex = uiState.firstVisibleItemIndex,
-                        initialFirstVisibleItemScrollOffset = uiState.firstVisibleItemScrollOffset,
-                        onScrollPositionChanged = { index, offset ->
-                            // ── FIX step 2: push scroll changes back to ViewModel ──
+                        initialIndex = uiState.firstVisibleItemIndex,
+                        initialOffset = uiState.firstVisibleItemScrollOffset,
+                        onScrollChanged = { index, offset ->
                             viewModel.processIntent(
                                 HotelListUiIntent.OnScrollPositionChanged(index, offset)
                             )
@@ -148,56 +117,37 @@ fun HotelListScreen(
     }
 }
 
-// ─────────────────────────── Sub-composables ─────────────────────────────────
-
 @Composable
 private fun HotelList(
     hotels: List<Hotel>,
-    initialFirstVisibleItemIndex: Int,
-    initialFirstVisibleItemScrollOffset: Int,
-    onScrollPositionChanged: (index: Int, offset: Int) -> Unit,
+    initialIndex: Int,
+    initialOffset: Int,
+    onScrollChanged: (Int, Int) -> Unit,
     onHotelClick: (Hotel) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // ── FIX step 1 (continued): pass persisted values to LazyListState ────────
-    //
-    // WITHOUT the fix you would write:
-    //   val listState = rememberLazyListState()
-    // That always starts at (0, 0).
-    //
-    // WITH the fix:
+    // Seed LazyListState with ViewModel-persisted position to survive navigation back-stack
     val listState = rememberLazyListState(
-        initialFirstVisibleItemIndex = initialFirstVisibleItemIndex,
-        initialFirstVisibleItemScrollOffset = initialFirstVisibleItemScrollOffset,
+        initialFirstVisibleItemIndex = initialIndex,
+        initialFirstVisibleItemScrollOffset = initialOffset,
     )
 
-    // ── FIX step 2: observe scroll position and sync to ViewModel ─────────────
-    //
-    // `snapshotFlow` turns Compose snapshot state into a regular Kotlin Flow.
-    // `distinctUntilChanged` prevents redundant dispatches when the values
-    // haven't actually changed (e.g., during fling deceleration at rest).
+    // Sync live scroll position back to ViewModel
     LaunchedEffect(listState) {
-        snapshotFlow {
-            listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset
-        }
+        snapshotFlow { listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
             .distinctUntilChanged()
-            .collect { (index, offset) ->
-                onScrollPositionChanged(index, offset)
-            }
+            .collect { (index, offset) -> onScrollChanged(index, offset) }
     }
 
     LazyColumn(
         state = listState,
         modifier = modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(
-            horizontal = 16.dp,
-            vertical = 12.dp,
-        ),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
     ) {
         items(
             items = hotels,
-            key = { it.id }, // stable keys help Compose skip unnecessary recompositions
+            key = { it.id },
         ) { hotel ->
             HotelCard(hotel = hotel, onClick = { onHotelClick(hotel) })
         }
@@ -219,24 +169,18 @@ private fun HotelCard(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
         Row(modifier = Modifier.padding(12.dp)) {
-
-            // ── Image placeholder ─────────────────────────────────────────────
             Box(
                 modifier = Modifier
-                    .size(width = 90.dp, height = 90.dp)
+                    .size(90.dp)
                     .clip(RoundedCornerShape(8.dp))
                     .background(MaterialTheme.colorScheme.primaryContainer),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(
-                    text = "🏨",
-                    style = MaterialTheme.typography.headlineMedium,
-                )
+                Text(text = "🏨", style = MaterialTheme.typography.headlineMedium)
             }
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            // ── Text content ──────────────────────────────────────────────────
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = hotel.name,
@@ -256,7 +200,6 @@ private fun HotelCard(
 
                 Spacer(modifier = Modifier.height(6.dp))
 
-                // Rating row
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Filled.Star,
@@ -302,10 +245,7 @@ private fun ErrorView(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Text(
-            text = "Something went wrong",
-            style = MaterialTheme.typography.titleMedium,
-        )
+        Text(text = "Something went wrong", style = MaterialTheme.typography.titleMedium)
         Text(
             text = message,
             style = MaterialTheme.typography.bodyMedium,
