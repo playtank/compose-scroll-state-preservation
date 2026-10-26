@@ -16,7 +16,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.runtime.remember
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
@@ -34,7 +35,6 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -46,10 +46,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.composescrolldemo.di.hotelListViewModelFactory
 import com.example.composescrolldemo.domain.model.Hotel
-import kotlinx.coroutines.flow.distinctUntilChanged
 
 /**
- * Hotel list screen — demonstrates LazyColumn scroll-preservation.
+ * Hotel list screen.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -100,13 +99,6 @@ fun HotelListScreen(
                 else -> {
                     HotelList(
                         hotels = uiState.hotels,
-                        initialIndex = uiState.firstVisibleItemIndex,
-                        initialOffset = uiState.firstVisibleItemScrollOffset,
-                        onScrollChanged = { index, offset ->
-                            viewModel.processIntent(
-                                HotelListUiIntent.OnScrollPositionChanged(index, offset)
-                            )
-                        },
                         onHotelClick = { hotel ->
                             viewModel.processIntent(HotelListUiIntent.OnHotelClicked(hotel.id))
                         },
@@ -120,24 +112,10 @@ fun HotelListScreen(
 @Composable
 private fun HotelList(
     hotels: List<Hotel>,
-    initialIndex: Int,
-    initialOffset: Int,
-    onScrollChanged: (Int, Int) -> Unit,
     onHotelClick: (Hotel) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // Seed LazyListState with ViewModel-persisted position to survive navigation back-stack
-    val listState = rememberLazyListState(
-        initialFirstVisibleItemIndex = initialIndex,
-        initialFirstVisibleItemScrollOffset = initialOffset,
-    )
-
-    // Sync live scroll position back to ViewModel
-    LaunchedEffect(listState) {
-        snapshotFlow { listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
-            .distinctUntilChanged()
-            .collect { (index, offset) -> onScrollChanged(index, offset) }
-    }
+    val listState = remember { LazyListState() }
 
     LazyColumn(
         state = listState,
