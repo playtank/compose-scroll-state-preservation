@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun HomeScreen(
     onNavigateToComposeScroll: () -> Unit,
+    onNavigateToRecompositionDemo: () -> Unit,
 ) {
     Scaffold(
         topBar = {
@@ -65,6 +66,13 @@ fun HomeScreen(
                 onClick = onNavigateToComposeScroll,
             )
 
+            // ── Unnecessary Recomposition (Before) ───────────────────────────
+            DemoButton(
+                title = "Unnecessary Recomposition",
+                description = "Anti-pattern: full state passed to list items causes all items to recompose on unrelated state changes",
+                onClick = onNavigateToRecompositionDemo,
+            )
+
             // ── Add more demo buttons below as new features are introduced ───
         }
     }
@@ -88,11 +96,6 @@ private fun DemoButton(
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleSmall,
-            )
-            Text(
-                text = description,
-                style = MaterialTheme.typography.bodySmall,
-                textAlign = TextAlign.Center,
             )
         }
     }

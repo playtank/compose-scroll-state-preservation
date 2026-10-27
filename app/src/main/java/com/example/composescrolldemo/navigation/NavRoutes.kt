@@ -20,4 +20,7 @@ sealed class NavRoutes(val route: String) {
 
         const val ARG_HOTEL_ID = "hotelId"
     }
+
+    /** Recomposition demo — shows the anti-pattern of passing full state to list items. */
+    data object RecompositionDemo : NavRoutes("recomposition_demo")
 }

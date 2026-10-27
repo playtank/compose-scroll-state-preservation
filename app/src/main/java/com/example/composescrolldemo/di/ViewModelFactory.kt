@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.composescrolldemo.presentation.hoteldetail.HotelDetailViewModel
 import com.example.composescrolldemo.presentation.hotellist.HotelListViewModel
+import com.example.composescrolldemo.presentation.recomposition.RecompositionViewModel
 /**
  * Generic [ViewModelProvider.Factory] that accepts a lambda producing a ViewModel.
  */
@@ -25,3 +26,6 @@ fun hotelListViewModelFactory(): ViewModelFactory<HotelListViewModel> =
 
 fun hotelDetailViewModelFactory(hotelId: Int): ViewModelFactory<HotelDetailViewModel> =
     viewModelFactory { HotelDetailViewModel(hotelId, AppContainer.getHotelByIdUseCase) }
+
+fun recompositionViewModelFactory(): ViewModelFactory<RecompositionViewModel> =
+    viewModelFactory { RecompositionViewModel() }

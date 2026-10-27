@@ -10,6 +10,10 @@ import androidx.navigation.navArgument
 import com.example.composescrolldemo.presentation.home.HomeScreen
 import com.example.composescrolldemo.presentation.hoteldetail.HotelDetailScreen
 import com.example.composescrolldemo.presentation.hotellist.HotelListScreen
+import com.example.composescrolldemo.presentation.recomposition.RecompositionDemoScreen
+import com.example.composescrolldemo.presentation.recomposition.RecompositionViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.composescrolldemo.di.recompositionViewModelFactory
 
 /**
  * Root [NavHost] wiring together all destinations.
@@ -32,6 +36,9 @@ fun AppNavGraph(
             HomeScreen(
                 onNavigateToComposeScroll = {
                     navController.navigate(NavRoutes.HotelList.route)
+                },
+                onNavigateToRecompositionDemo = {
+                    navController.navigate(NavRoutes.RecompositionDemo.route)
                 },
             )
         }
@@ -66,6 +73,25 @@ fun AppNavGraph(
             HotelDetailScreen(
                 hotelId = hotelId,
                 onNavigateBack = { navController.popBackStack() },
+            )
+        }
+
+        // ── Recomposition Demo ────────────────────────────────────────────────
+        // The ViewModel is created here (scoped to this back-stack entry) so it
+        // persists across navigations and the clickCounter never resets.
+        composable(route = NavRoutes.RecompositionDemo.route) { backStackEntry ->
+            val viewModel: RecompositionViewModel = viewModel(
+                viewModelStoreOwner = backStackEntry,
+                factory = recompositionViewModelFactory(),
+            )
+            RecompositionDemoScreen(
+                onNavigateBack = {
+                    navController.popBackStack(
+                        route = NavRoutes.Home.route,
+                        inclusive = false,
+                    )
+                },
+                viewModel = viewModel,
             )
         }
     }
