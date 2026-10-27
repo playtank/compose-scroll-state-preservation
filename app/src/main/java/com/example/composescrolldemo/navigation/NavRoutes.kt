@@ -5,7 +5,10 @@ package com.example.composescrolldemo.navigation
  */
 sealed class NavRoutes(val route: String) {
 
-    /** Hotel list — root destination. */
+    /** App home screen — root destination listing all demo features. */
+    data object Home : NavRoutes("home")
+
+    /** Hotel list — entry point of the Compose Scroll demo. */
     data object HotelList : NavRoutes("hotel_list")
 
     /**

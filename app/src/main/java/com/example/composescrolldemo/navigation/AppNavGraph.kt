@@ -7,15 +7,15 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.example.composescrolldemo.presentation.home.HomeScreen
 import com.example.composescrolldemo.presentation.hoteldetail.HotelDetailScreen
 import com.example.composescrolldemo.presentation.hotellist.HotelListScreen
 
 /**
  * Root [NavHost] wiring together all destinations.
  *
- * Each composable destination defines a unique back-stack entry. When navigating
- * to [HotelDetail], the [HotelList] entry stays on the back-stack while its
- * Composable is destroyed — which triggers the scroll-reset behavior.
+ * The app starts at [Home], which lists all available demos as buttons.
+ * Each demo feature owns its own set of routes and back-stack entries.
  */
 @Composable
 fun AppNavGraph(
@@ -24,14 +24,29 @@ fun AppNavGraph(
 ) {
     NavHost(
         navController = navController,
-        startDestination = NavRoutes.HotelList.route,
+        startDestination = NavRoutes.Home.route,
         modifier = modifier,
     ) {
+
+        composable(route = NavRoutes.Home.route) {
+            HomeScreen(
+                onNavigateToComposeScroll = {
+                    navController.navigate(NavRoutes.HotelList.route)
+                },
+            )
+        }
 
         composable(route = NavRoutes.HotelList.route) {
             HotelListScreen(
                 onNavigateToDetail = { hotelId ->
                     navController.navigate(NavRoutes.HotelDetail.createRoute(hotelId))
+                },
+                // Pop back to Home explicitly so rapid double-taps can't empty the back stack.
+                onNavigateBack = {
+                    navController.popBackStack(
+                        route = NavRoutes.Home.route,
+                        inclusive = false,
+                    )
                 },
             )
         }
