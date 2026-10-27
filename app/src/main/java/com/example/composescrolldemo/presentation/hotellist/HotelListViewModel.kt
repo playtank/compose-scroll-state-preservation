@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
- * ViewModel for [HotelListScreen], implementing the MVI pattern.
+ * ViewModel for [HotelListScreen], implementing the MVI pattern and scroll position survival.
  */
 class HotelListViewModel(
     private val getHotelsUseCase: GetHotelsUseCase,
@@ -34,6 +34,15 @@ class HotelListViewModel(
             is HotelListUiIntent.OnHotelClicked -> {
                 viewModelScope.launch {
                     _effects.send(HotelListUiEffect.NavigateToDetail(intent.hotelId))
+                }
+            }
+
+            is HotelListUiIntent.OnScrollPositionChanged -> {
+                _uiState.update { state ->
+                    state.copy(
+                        firstVisibleItemIndex = intent.firstVisibleItemIndex,
+                        firstVisibleItemScrollOffset = intent.firstVisibleItemScrollOffset,
+                    )
                 }
             }
 
